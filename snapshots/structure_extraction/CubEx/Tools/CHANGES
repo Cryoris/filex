@@ -1,0 +1,120 @@
+------- v 1.7 :
+
+- changes in CubeFix, CubeSharp and other tools to handle properly the AO MUSE datacubes
+  (that include large NaN gaps)
+
+- minor tools (CubeArit, CubeReshape, etc.) improved, see usage screen.
+
+
+
+-------- v 1.6 beta:
+
+-- CubePSFSub:
+
+   - major improvement of the algorithm with new options added. Optimized PSF subtraction layer by layer is
+     acrivated with the option "-nbins -1" and setting zPSFsize. See usage screen for more info.
+
+-- Cube2Im:
+
+   - new options added, e.g. to filter out sky regions from broad-band images. See usage screen.
+
+-- other tools:
+
+   - minor bug fixing and improvements.
+
+
+--------- v 1.5 beta:
+
+-- CubeSharp:
+
+   - added the option of not considering a given object in the sourcemask (e.g. a variable source
+     like a quasar) in the continuum and line feature removal.
+
+   - adjusted default behaviour when hsncube is provided (see CubeSharp usage screen).
+
+   - minor bugs fixed
+
+-- CubeFix:
+
+   - added default option "writemap" to be used together with the new tool CubeAdd2Mask (see below).
+
+-- New tool: CubeAdd2Mask:
+   
+   - add to a image mask the edge slices of selected ifu (stacks) given a cube and pixtable
+     AND/OR add to the mask an object from a Objects_Id CubEx output. This tool may be run
+     interactively with ds9 and it can improve data reduction for problematic datacubes
+     where illumination correction fails miserably. See usage screen.
+
+-- Cube2Im and CubeSel:
+
+   - added the option of cutting individual subcubes and NB images around individual objects
+     with spatial/wavelength padding and other features for data analysis (see CubSel and Cube2Im
+     usage screens and the file README_ANALYSIS_EXAMPLE in the Sripts folder).
+
+-- added README_ANALYSYS_EXAMPLE in the new folder Scripts with practical usage examples.
+
+
+--------- v 1.4 beta:
+
+-- CubeFix & CubeSharp:
+
+   - added the option for the user to input a sourcemask. The sourcemask can be produced from 
+     a white-light image of a higher-SN combined cube processed with CubEx-1.4: the resulting 
+     Object_Id file may be given as a input to CubeFix. This significantly improves flat fielding
+     and sky-subtraction. 
+
+   - added the option in CubeSharp for the user to input a higher SN cube (e.g. from a previous iteration)
+     for source continuum removal. This greatly improves sky-subtraction of bright sources. 
+     Also, three parameters have been added for line feature checks. If a line is detected, 
+     no shifting is performed in CubeSharp (only 0th-order sky-subtraction) to avoid affecting
+     the line shape of bright sources (type CubeSharp for more information).
+
+   - fixed a bug in CubeSharp that may cause flux-losses at some line edges. 
+
+   - improved handling of bright sources and various minor bugs fixed in current version
+     of CubeFix and CubeSharp.
+ 
+-- CubeCombine:
+
+  - completely new version that improves memory management and overall speed during cube combination.
+    Typical memory usage is now less than 1-2Gb independently of the number of cubes to combine
+    (combination is performed layer by layer), speed is improved by one order of magnitude. 
+    Number of threads is not restricted anymore to any particular value.   
+
+-- general / other tools:
+
+  - added options to output NaN instead of -999
+  - other tools improved, some changes in the default parameters. Type executable names
+    in terminal for more information.
+
+
+--------- v 1.3 beta:
+
+- new DATA REDUCTION tools: 
+  1) CubeFix: Flat-fielding Instrument-space Correction Software 
+  2) CubeSharp: SHift and Add sky Removal Procedure. 
+     Individual documentation for these two tools will be made available separately.
+     For general usage, type CubeFix or CubeSharp from terminal.
+  3) CubeCombine: combine cubes using sigma clipped mean or median, including slice edge masking,
+     and weighting. Variance is propagated or calculated from combination. 
+     Type CubeCombine from terminal for more information.
+
+- several other generic tools have been added, e.g. for cube statistics (CubeStat)
+  or to perform simple arithmetics (CubeArit), or PSF subtraction (CubePSFSub). 
+  See folder and/or type executable names in terminal for more information. 
+
+- NB: all tools executables have been renamed without the ".x" at the end!
+
+---------- v 1.2b:
+
+- CubeSel now reads and propagates WCS information into the output subcube. 
+  CRVAL3 (initial lambda value) is updated according to the zmin selection cut.
+
+- added "pix2wcs" tool (in this folder) to convert pixel position to ra-dec given a WCS header
+
+- added a new routine: Cube2Spc.x to produce and plot 1d spectra from datacubes and checkcubes.
+
+- added a new routins: CubeBKGSub.x to remove residual background with median filtering (Oct, 21, 2014).
+
+- NB: the names of some optional parameters has been simplified. Run, e.g. "Cube2Im.x", 
+   without command line arguments to get more information. 

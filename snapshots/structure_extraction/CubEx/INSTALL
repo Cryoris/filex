@@ -1,0 +1,19 @@
+
+Installation steps:
+
+1. requires the library CFITSIO (http://heasarc.gsfc.nasa.gov/fitsio/fitsio.html), typically installed as standard library somewhere in your machine.
+   Type: "locate libcfitsio.a" in your terminal to find out exactly where it is.
+
+2. update the following fields in the Makefile according to your compiler and the location of the CFITSIO libraries: 
+   FC= "gfortran/ or intel fortran compiler" (ifort not longer supported from v1.6)
+   CFITSIO_LIBPATH= "path to the CFITSIO library"
+   BINDIR= "installation directory for the executable file"
+
+3. optional: adjust the compiler flags in the Makefile if needed.
+
+4. type make (you may need to do "make clean" first)
+
+5. repeat the steps above in the folder "Tools" if you want to install the additional, separate tools CubeFix, CubeSharp, CubeCombine, CubeSel, Cube2Im, Cube2Spc, etc.
+
+DONE!
+

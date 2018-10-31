@@ -1,0 +1,91 @@
+--- CubExtractor, v.1.7 
+
+Author: Sebastiano Cantalupo
+Last Update: Nov 29 2017
+
+See LICENCE 
+
+---- Brief description:
+
+This code performs extraction, detection and (simple) photometry of sources from 3D datacubes 
+using an efficient connected labeling component algorithm with union finding  
+based on classical binary image analysis extended to 3D (see e.g., Shapiro & Stockman, 
+Computer Vision, Mar 2000). 
+
+Datacubes can be filtered (smoothed) with 3D gaussian filters before extraction. 
+Pixels are selected above a pixel-by-pixel SNR threshold with respect to a (input) Variance datacube. 
+Photometry is currently performed on IsoVolumes, Boxes and Cylindrical apertures. 
+Various "CheckCubes" may be produced for testing purposes (see CubEx usage screen) and
+used as an input, e.g. for the separate analysis tools (see "Tools" folder) and 
+3D visualization. 
+
+CubEx works directly on standard MUSE datacubes as produced by the pipeline,
+user provided datacubes (with the variance cube in a separate file),
+or on (trimmed) datacubes that may be subtracted by background residuals and by continuum objects by the
+separate tool CubeSel and CubeBKGSub (see "Tools" folder). 
+From version 1.4, CubEx works also on images (with or without associated variance extension).
+
+NB: background residuals needs to be removed PRIOR to running CubEx, as CubEx assumes a constant
+background value of zero. If background residuals are present, try improving the reduction
+using the data-reduction tools CubeFix (for flat-fielding correction) and CubeSharp (for sky-subtraction)
+in the folder Tools. To remove the continuum or any other background residual the separate tool 
+CubeBKGSub (see "Tools" folder) may be also used for this task directly on the cube.
+
+---- Installation:
+
+see INSTALL.
+
+---- Running the code:
+
+simply type CubEx from your terminal for usage and options.
+
+---- Output:
+
+Catalogue: ASCII file with detected sources geometrical and photometrical properties. 
+           See file header for detailed information on the individual entries.
+
+CheckCubes: 3D datacubes (fits or "Brick of Values" format available) of various quantities 
+            (see CubEx usage screen). 
+
+Suggested visualization software: Datacubes may be visualized with VisIt both in "fits"
+                                  and "bov" formats (https://wci.llnl.gov/codes/visit).
+
+---- Usage Examples
+
+ See README and README_ANALYSIS in Scripts folder 
+   
+
+---- Analysis / Visualization:
+
+ For 3D visualization of the CheckCubes produced by CubEx, install VisIt (https://wci.llnl.gov/codes/visit)
+ and try, e.g.
+
+ visit -o CheckCube.Objects_Id.fits 
+      
+ There are several software tools in the Tool directory to produce images, 2d spectra and 1d
+ spectra using the CheckCubes (e.g. the 3D Mask with the object), e.g. Cube2Im.x, and Cube2Spc.x 
+ (see README in Tool folder).
+
+--- USAGE TIPS:
+
+ Try to put all parameters in a parameter file (you can produce one simply typing "CubEx > CubEx.par") and use the command line option 
+ just for a quick assessment of how things change, e.g. modifying the SN_Treshold or MinNSpax, or turning on/off flags. 
+ In this way, you always have a record of the set of parameters you used for a particular Cube :-)
+
+
+---- Fixes and known problems:
+
+Some versions of the CFITSIO libraries produce a segmentation fault while reading a section
+of the datacube that does not start from the first spaxel. In order to fix this problem, use:
+
+CFITSIOLibFix = .true. 
+
+in the parameter file or from the command line with:
+
+-CFITSIOLibFix ".true."
+
+Note that this increases memory costs during datacube reading (especially if the datacube section
+is on the very end of the wavelength range). CubEx will try to fix the problem automatically,
+otherwise, you have to set it .true. manually either in the parameter file or via command line.
+
+

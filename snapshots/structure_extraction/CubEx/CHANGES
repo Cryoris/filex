@@ -1,0 +1,133 @@
+------- v 1.7 :
+
+- included the option for rescaling variance using only a subregion in the cube (useful
+  to avoid edges and other parts of the cube that will bias the rescaling variance factor
+  too high).
+
+- various changes in Tools to handle AO MUSE datacubes (that include a large NaN gap)
+
+
+-------- v 1.6 beta:
+
+--> NB: from this version the command name does not include the version anymore,
+        i.e. "CubEx" instead of "CubEx-1.6".
+
+- improved handling of variance: the (pipeline-propagated) variance cube can be now rescaled
+  before extraction/detection layer-by-layer by an automatically computed factor that takes
+  into account the estimated (spatial) variance in the cube itself (see CubEx-1.6 usage screen
+  for more information).
+
+- parameter file structure has been improved for easier visualization. MinNSpax parameter
+  is now called MinNVox for clarity. For backward compatibility, MinNSpax is still a valid name.
+
+- new parameter "IdCube" to perform photometry only using existing Objects_Id cube without
+  performing extraction and detection (useful, for matched 3d-aperture photometry).
+
+- minor changes in Tools. See Tools/CHANGES.
+
+
+
+
+-------- v 1.5 beta:
+
+- improved masking before extraction/detection: now CubEx can use an image (produced, e.g. 
+   by a previous CubEx run on a white-light image) as a mask. Individual objects may be
+   masked/unmasked given the provided mask. Also, there is now the possibility 
+   of masking individual wavelength layers. All these features have been grouped in a
+   new section called "Masking" in the parameter file. A problem with XYedge masking
+   was also fixed.
+
+- added WCS to all output including CheckCubes.
+
+- added a new parameter "Objects_SNR_Floor" to improve visualization of SN cubes
+  with VisIt (See CubEx usage screen).
+
+- short aliases for most common parameters have been added for command line usage.
+
+- several changes in Tools. See Tools/CHANGES.
+
+-------- v 1.4 beta:
+
+- added support for images: now CubEx can also run on a image fits. 
+
+- if variance extension/file is not present, a layer by layer variance is
+  computed from the cube/image (need to set -MultiExt .true. or MultiExt = .true. 
+  the parameter file)
+
+- added a new parameter "SN_Threshold_Conn" (run CubEx-1.4 for more info).
+
+- major changes in Tools. See Tools/CHANGES.
+
+---------- v 1.3 beta:
+
+MINOR:
+
+- improved handling of UNDEF values in extraction and photometry.
+
+- new CheckCubeTypes added :
+  a) "CubeF": smoothed cube
+  b) "VarF" : smoothed variance 
+
+- associate default names for CheckCubes depending on their Type.
+
+BUGS FIXED:
+
+- fixed a bug in the variance filtering in the z-direction (the wrong array was used because 
+  of zombie-code-lines from previous version).
+
+- fixed a compilation problem with gfortran and CFITSIO libraries.
+
+
+------------ v 1.2 beta:
+
+MAJOR:
+
+- new routine for Deblending (Deblend.f90) added:  this routine performs deblending 
+  using a progressive SN threshold with min, max and number of steps defined by 
+  the user (Deblend_* parameters). Final ISO volume for each deblended object corresponds 
+  to the lowest SN threshold (within selected range) at which the object may be split.
+  Deblending is performed on a 2D mask defined by collapsing along the 
+  z-direction the minimum volume occupied by the object in the datacube.
+
+- new routine Associate.f90: associate objects in wavelength if their projected area
+  overlaps (controlled by parameter "AssocFrac"). There is now a new field "Assoc ID"
+  in the output that tells the ID of the largest (by size) associated object. 
+
+- new routine MergeAssoc.f90: merge associated objects in wavelength (see above)
+  and produce a "merged catalogue" if requested (option AssocCatalogue) containing
+  merged photometrical and geometrical information.
+
+- new CheckCubeTypes have been added: 
+  a) "Objects_Id_Assoc": for associated objects this cube contains the Assoc Id 
+  (rather than the object Id). This is useful to group objects, e.g. part of a faint 
+  continuum or different lines, together for spectrum  extraction or any other 
+  post-processing analysis. 
+  b) "Residuals": this is simply the opposite of the "Object" mask. 
+
+- if present, reads WCS info from datacube fits header, performs coordinate transformations 
+  and add ra, dec, and lambda of detected objects in the final catalogue.  
+
+
+MINOR: 
+
+
+- new parameter "XYedge" to exclude all pixels close to the edge before extraction.
+  Particularly useful for cubes with noisy edges.
+
+- new parameters "lmin" and "lmax": they work like "zmin" and "zmax" but select the
+  cube in wavelength units (i.e., CUNIT3) rather than in spectral pixels. Needs a file
+  with WCS to work. NB: lmin and lmax DO NOT have precedence over zmin and zmax.
+
+- improved handling of UNDEF and edge effects during filtering (at expenses of 
+  computational speed).
+
+
+BUGS FIXED:
+
+- all checkcubes except ID ones had a shift of one pixel with respect to correct values
+  because of the ghost-zones in the masks that are not present in checkcubes. 
+  This is now FIXED and, e.g. SNR checkcubes, should report correct values everywhere 
+  in the present version.
+ 
+- fixed a problem with variable string array length when compiled with gfortran (Oct 21, 2014).
+

@@ -1,0 +1,73 @@
+This folder contains several tools for data reduction or tools that can be used in combination with CubEx.
+
+NB: all these tools work with whole datacubes or datacube section using CFITSIO extended syntax,
+    e.g. Cube2Im DATACUBE_FINAL.fits[20:100,20:100,1:3000] 
+
+---- DATA REDUCTION TOOLS:
+
+CubeFix : calculates and applies a flat-fielding correction to individual datacubes using 
+          narrow and broad bands images constructed from the datacube itself and from 
+          the associated pixel-table. Variance propagation is included. 
+          If a sourcemask is provided (e.g. generated from a higher-SN cube white-light
+          image processed with CubEx), flat-fielding around bright sources is
+          significantly improved.
+          Type CubeFix for the full list of options.
+
+CubeSharp: performs sky LSF correction and subtraction from individual datacubes using 
+           a flux-conserving algorithm based on sub-pixels shifts of spectral pixels.
+           Pixel flux is "shifted" across neighboring pixels until variance is minimized
+           with respect to a reference sky (calculated from the datacube itself).
+	   A sourcemask may be provided as in the case of CubeFix.
+           Variance is propagated accordingly.
+           Type CubeSharp for the full list of options.
+
+CubeCombine: combines datacubes that have been registered on the same voxel grid 
+             using sigma clipped mean or median, including slice edge masking 
+             (produced by CubeFix) and (variance) weighting. A variance extension is produced
+             by the propagated variance from individual datacubes or calculated from the
+             average. Type CubeCombine for the full list of options.
+             CubeCombine is parallel (OMP). Set variable: OMP_NUM_THREADS before running it!
+             NB: from version 1.4 there is no restriction in the number of OMP_NUM_THREADS.
+
+CubeAdd2Mask: adds ifu edges or selected objects to a mask previously created with CubeFix.
+              See CubeAdd2Mask for full list of options.
+
+---- DATA ANALYSIS tools:
+
+CubeSel : performs cube selection given a wavelength range or around objects
+          from a mask. Type CubeSel (once installed) for the full list of options.
+
+Cube2Im : produces pseudo-NB, 2D spectra and "optimally extracted"
+         images and 2D spectra of cube, subcubes, CheckCubes from CubEx or around selected 
+         objects from a mask. Type Cube2Im (once installed) for the full list of options.
+
+Cube2Spc : uses the CheckCubes output of CubEx to produce and plot "optimally extracted" 1d spectra.
+
+CubeBKGSub : performs continuum subtraction using median filtering (BKG subtraction with this tool is
+             not supported anymore. Please use CubeFix and CubeSharp to improve data reduction).
+	     BKG/continuum subtraction is controlled by two parameters: the size of one single cell of the BKG cube ('bpsize')
+	     in units of the original cube and the size of the filter for the median filtering 
+             of the BKG cube ('bfrad' option). 
+             Type CubeBKGSub (once installed) for the full list of options.
+             To activate the parallel version of the code, you need to specify the number of
+             CPUs you want to use with the environment variable "OMP_NUM_THREADS", e.g. "export OMP_NUM_THREADS=8"
+	     NB: because BKG residuals are greatly reduced by CubeFix and CubeSharp, this software is 
+                  generally not useful anymore for BKG subtraction and it should be used only for CONTINUUM 
+                  SUBTRACTION setting the first two parameters of bpsize to '1 1' and to '0 0' for bprad.
+
+CubePSFSub:  performs PSF subtraction from datacubes. Type CubePSFSub for the full list of options.
+
+CubeStat:    returns statistical information from datacubes or datacube sections.
+
+CubeArit:    performs simple arithmetical operation with datacubes. Type CubeArit for full list of options.
+
+
+see LICENCE.
+
+In addition, there are also some generic, simple tools:
+
+pix2wcs.x : converts pixel positions to ra-dec given a WCS fits header 
+
+For installation, see INSTALL in the root folder of CubEx.
+
+For usage examples, see README in the root folder of CubEx

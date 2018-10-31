@@ -1,0 +1,5 @@
+
+- improved photometry parameters, changes in AperDz, automatic spectral extraction for photometry
+
+- add one option to select a specific Id in IdCube photometry parameter
+

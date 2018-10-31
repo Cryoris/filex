@@ -1,0 +1,89 @@
+#### EXAMPLE of the data reduction procedure after "standard" muse_scipost for a 4 exposure field (QSO) #### 
+
+0. IF NECESSARY: correct offsets and register all cubes to the same grid using GetImageOffsets.bash (QC: check offsets and change script if necessary):
+   - ls -1 $DATALOCATION/DATACUBE_FINAL*.fits > cube.list
+   - ./GetImageOffsets.bash cube.list
+   - produce new cubes with correct WCS using DRS.
+
+1. Create "dataloc" and "scipost" symbolic links to DATACUBE_FINAL_WCS_00??.fits and to 00??/PIXTABLE_REDUCED_0001.fits folders
+   Create a data reduction version folder and copy CubEx scripts from CubEx-1.x/Scripts/*.sh to the current folder
+ln -s $DATALOCATION/cubes_wcs/ dataloc
+ln -s $DATALOCATION/pixtables/ scipost
+
+1qc. Quality Control of the RAW images.
+   --> ds9 ../dataloc/IMAGE_WCS_00??.fits -frame show all -tile mode grid -tile grid layout 2 2 -tile grid gap 0 -zscale -zoom to fit -lock scale yes -mode zoom -cmap b -lock colorbar yes -match frame wcs -match frame image -match scale -print color rgb -print destination file -print destination file -print filename QC_RAW.ps -print -quit
+
+2. Edit CubeFixLoop_0.sh script if necessary and run (ncubes is limited by memory):
+   ./CubeFixLoop_0.sh 1 4            # this will run 4 CubeFix in parallel, one per datacube, starting from cube 1 to cube 4 (see script) 
+
+3. Create white-light images: 
+   ls -1 DATACUBE_*FIX_00??.fits > fix.list
+   ./Cube2ImLoop.sh fix.list         # this will produce in parallel white-light images from all cubes in fix.list
+
+3qc. Quality Control of the Fixed_0 images.
+    --> ds9 DATACUBE_FINAL_WCS_FIX_00??.IM.fits -frame show all -tile mode grid -tile grid layout 2 2 -tile grid gap 0 -zscale -zoom to fit -lock scale yes -mode zoom -cmap b -lock colorbar yes -match frame wcs -match frame image -match scale -print color rgb -print destination file -print destination file -print filename QC_Fix0.ps -print -quit
+
+4. IF NECESSARY: create a script with ifu and stacks to mask with CubeAdd2Mask and check masked files, e.g.:
+   CubeAdd2Mask -cube DATACUBE_FINAL_WCS_FIX_0002.fits -i .true.
+   CMD="CubeArit DATACUBE_FINAL_WCS_FIX_0008.IM.fits \"*\" DATACUBE_FINAL_WCS_FIX_0008_SliceEdgeMask.fits masked_0008.IM.fits"
+   eval $CMD  
+
+5. Edit CubeSharpLoop_0.sh if necessary and run
+   ./CubeSharpLoop_0.sh 1 4         # this will run 4 CubeSharp in parallel, one per datacube, starting from cube 1 to cube 4 (see script)
+
+6. Create images: 
+   ls -1 DATACUBE_*FIX_SHARP_00??.fits* > fix_sharp.list
+   ./Cube2ImLoop.sh fix_sharp.list			
+
+6qc. Quality Control of the Sharped_0 images.
+    --> ds9 DATACUBE_FINAL_WCS_FIX_SHARP_00??.IM.fits -frame show all -tile mode grid -tile grid layout 2 2 -tile grid gap 0 -zscale -zoom to fit -lock scale yes -mode zoom -cmap b -lock colorbar yes -match frame wcs -match frame image -match scale -print color rgb -print destination file -print destination file -print filename QC_Sharp0.ps -print -quit
+
+7. Create file lists: 
+   ls -1 *FIX_SHARP_00??.fits > cube.list
+   ls -1 *SliceEdgeMask*.fits > mask.list 
+
+8. Run CubeCombine:
+   OMP_NUM_THREADS=30 CubeCombine -list cube.list -masklist mask.list -out CombCube_0.fits 
+
+9. Create sourcemask with CubEx:
+
+   Cube2Im -cube CombCube_0.fits -skycube DATACUBE_FINAL_WCS_FIX_0001.fits -out CombCube_0_skyfilter.IM.fits
+   CubEx -InpFile CombCube_0_skyfilter.IM.fits -MultiExt .false. -ApplyFilter .true. -ApplyFilterVar .true. -FilterXYRad 1 -SN_Threshold 7 -MinNSpax 5
+   --> check file with ds9 to check if sources were properly masked: CombCube_0_skyfilter.IM.Objects_Id.fits
+   run again CubEx changing parameters if necessary
+   --> mv CombCube_0_skyfilter.IM.Objects_Id.fits SourceMask.fits
+   --> check QSO IDs to run CubeSharp (step 13) with -skipobjid option.
+
+10. Edit CubeFixLoop_1.sh if necessary and run:
+   ./CubeFixLoop_1.sh 1 4
+ 
+11. Create images: 
+   ls -1 DATACUBE_*FIX_00??.fits  > fix.list
+   ./Cube2ImLoop.sh fix.list
+
+11qc. Quality Control of the Fixed_1 images.
+     --> ds9 DATACUBE_FINAL_WCS_FIX_00??.IM.fits -frame show all -tile mode grid -tile grid layout 2 2 -tile grid gap 0 -zscale -zoom to fit -lock scale yes -mode zoom -cmap b -lock colorbar yes -match frame wcs -match frame image -match scale -print color rgb -print destination file -print destination file -print filename QC_Fix1.ps -print -quit
+
+12. Run again the script with CubeAdd2Mask if done already at step 3; add/modify -add2mask parameters if needed 
+
+13. Run CubeSharpLoop_skipid_1.sh with the 'objid' numbers as external parameter if on a quasar field:
+    ./CubeSharpLoop_skipid_1.sh 1 4 57
+    or run the standard version otherwise:
+    ./CubeSharpLoop_1.sh 1 4 
+
+14. Create images: 
+   ls -1 DATACUBE_*FIX_SHARP_00??.fits > cube.list
+   ./Cube2ImLoop.sh cube.list
+
+14qc. Quality Control of the Sharped_1 images.
+     --> ds9 DATACUBE_FINAL_WCS_FIX_SHARP_00??.IM.fits -frame show all -tile mode grid -tile grid layout 2 2 -tile grid gap 0 -zscale -zoom to fit -lock scale yes -mode zoom -cmap b -lock colorbar yes -match frame wcs -match frame image -match scale -print color rgb -print destination file -print destination file -print filename QC_Sharp1.ps -print -quit
+
+15. Run again CubeCombine: 
+    
+    OMP_NUM_THREADS=30 CubeCombine -list cube.list -masklist mask.list -out DATACUBE-CT_656-v01-PROPVAR.fits
+    Cube2Im -cube DATACUBE-CT_656-v01-PROPVAR.fits -skycube DATACUBE_FINAL_WCS_FIX_0001.fits -out DATACUBE-CT_656-v01-PROPVAR.IM.fits
+
+    OMP_NUM_THREADS=30 CubeCombine -list cube.list -masklist mask.list -propvar .false. -out DATACUBE-CT_656-v01-STATVAR.fits 
+    Cube2Im -cube DATACUBE-CT_656-v01-STATVAR.fits -skycube DATACUBE_FINAL_WCS_FIX_0001.fits -out DATACUBE-CT_656-v01-STATVAR.im.fits 
+
+16. Repeat steps 9-15 if necessary

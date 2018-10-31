@@ -1,0 +1,112 @@
+
+### EXAMPLE of datacube analysis procedure with CubEx and CubEx tools (in this case an extended emission around a source) ####
+
+[0. PSF subtraction (e.g. for a QSO-field) layer by layer masking a region with possible emission
+ CubePSFSub -cube "DATACUBE.fits" -out "DATACUBE.PSFSub.fits" -x 150 -y 150 -nbins -1 -zPSFSize 150 -maskpix "98 109"
+]
+
+1. perform continuum-subtraction on original cube with median filtering masking a region of interest
+   and using various filter sizes:
+CubeBKGSub -cube "DATACUBE-STATVAR.fits" -out DATACUBE-STATVAR.CSub_20_2.fits -bpsize '1 1 20' -bfrad '0 0 2' -maskpix '98 109'
+CubeBKGSub -cube "DATACUBE-STATVAR.fits" -out DATACUBE-STATVAR.CSub_40_3.fits -bpsize '1 1 40' -bfrad '0 0 3' -maskpix '98 109'
+CubeBKGSub -cube "DATACUBE-STATVAR.fits" -out DATACUBE-STATVAR.CSub_10_10.fits -bpsize '1 1 10' -bfrad '0 0 10' -maskpix '98 109'
+
+1b. produce and check the corresponding SNR_F cubes, check zero level of region of interest:
+CubEx -cube DATACUBE-STATVAR.CSub_20_2.fits -var "DATACUBE-STATVAR.fits[2]" -f .true. -fv .true. -fsr 2 -sn 1.e9 -cct "SNR_F"
+ds9 DATACUBE-STATVAR.CSub_20_2.SNR_F.fits &
+
+2. cut subcube (data and var) around region of interest:
+CubeSel -cube DATACUBE-STATVAR.CSub_20_2.fits -zmin 70 -zmax 130 -out DATACUBE-STATVAR.CSub_20_2.70-130.fits
+CubeSel -cube "DATACUBE-STATVAR.fits[2]" -zmin 70 -zmax 130 -out DATACUBE-STATVAR.70-130.VAR.fits 
+
+2b. check NB image from selection:
+Cube2Im DATACUBE-STATVAR.CSub_20_2.70-130.fits 
+ds9 DATACUBE-STATVAR.CSub_20_2.70-130.IM.fits &
+
+3. produce bright object mask from original cube:
+Cube2Im -cube "DATACUBE-STATVAR.fits" -out DATACUBE-STATVAR.IM.fits
+ check: ds9 DATACUBE-STATVAR.IM.fits &
+CubEx -cube DATACUBE-STATVAR.IM.fits -MultiExt .false. -f .true. -fv .true. -fsr 1 -sn 5 -n 80
+ check: ds9 DATACUBE-STATVAR.IM.Objects_Id.fits
+mv DATACUBE-STATVAR.IM.Objects_Id.fits SourceMask.fits
+
+3b. produce a layer masklist of bad wavelength layers (e.g. from the SNR_F cube produced in point 1b above) in units of the cutcube:
+echo 21 >> LayerMask.list
+
+4. run CubEx:
+
+produce a parameter file:
+CubEx > cubex.par
+
+edit cubex.par:
+InpFile = "DATACUBE-STATVAR.CSub_20_2.70-130.fits" 
+VarFile = "DATACUBE-STATVAR.70-130.VAR.fits"
+ApplyFilter = .true.  
+ApplyFilterVar = .true.
+FilterXYRad = 2 
+FilterZRad = 1 
+SN_Threshold = 2.5   
+MinNSpax = 100
+NCheckCubes = 2 
+CheckCubeType = "Objects_Id" "Objects_SNR_F"
+SourceMask = "SourceMask.fits"
+UnMask     = "19" 
+XYedge = 20  
+LayerMaskList = "LayerMask.list" 
+
+run CubEx adjusting the SN_Threshold and MinNSpax from command line, if necessary:
+CubEx cubex.par -SN_Threshold 2.5 -MinNSpax 100
+
+check result with visit:
+visit -o DATACUBE-STATVAR.CSub_20_2.70-130.Objects_Id.fits &
+  Add -> Pseudolocor -> Id -> OpAtts -> Selection -> Threshold -> min=1 (Apply) -> Draw
+
+re-run CubEx adjusting parameters, if necessary, e.g. (for extended emission):
+CubEx cubex.par -SN_Threshold 2.5 -MinNSpax 5000
+
+check result with visit:
+  -> ReOpen
+
+(record changes in cubex.par)
+
+
+5. cut subcube of SNR_F around selected object with some padding in all directions(-idpad) [to remove any other object from subcube, use -idclean .true. ]:
+CubeSel -cube DATACUBE-STATVAR.CSub_20_2.70-130.Objects_SNR_F.fits -idcube DATACUBE-STATVAR.CSub_20_2.70-130.Objects_Id.fits -id 1 -idpad "10 10 10" -out Obj1.SNR_F.fits -idclean .true.
+
+ 3D visualization:
+ visit -o Obj1.SNR_F.fits (or open a new window in VisIt)
+ Add -> Contour -> SNR -> PlotAtts -> Contour -> change Values (e.g. 2.5 3 5, enter), change opacities -> Apply -> Draw
+
+
+6. produce a NB image of the object with some padding in spatial directions adding a single layer (central layer of the object, automatically selected) as a noise reference:
+Cube2Im -cube DATACUBE-STATVAR.CSub_20_2.70-130.fits -idcube DATACUBE-STATVAR.CSub_20_2.70-130.Objects_Id.fits -id 1 -idpad 10 -out Obj1.NB.fits -nl -1 -imtype "flux" -sbscale .true.
+
+6b. adding two extra noise layers around previous one and applying gaussian smoothing (with radius=1 pixels, i.e. size=3 pixels):
+Cube2Im -cube DATACUBE-STATVAR.CSub_20_2.70-130.fits -idcube DATACUBE-STATVAR.CSub_20_2.70-130.Objects_Id.fits -id 1 -idpad 10 -out Obj1.NB_3nls.fits -nl -1 -nlpad 3 -imtype "flux" -sbscale .true. -gsm 1 
+
+
+6c. shift the 3d mask and produce a NB image in a different wavelength location using a larger cube (to check for a different line or noise):
+Cube2Im -cube DATACUBE-STATVAR.CSub_20_2.fits -idcube DATACUBE-STATVAR.CSub_20_2.70-130.Objects_Id.fits -id 1 -idpad 10 -out Obj1.NB_3nls_shift100.fits -nl -1 -nlpad 3 -imtype "flux" -sbscale .true. -maskshift "0 0 100"
+
+
+7. produce a 2D spectrum using as aperture the projection of the object on the xy plane and integrating along the y direction:
+Cube2Im -cube DATACUBE-STATVAR.CSub_20_2.70-130.fits -idcube DATACUBE-STATVAR.CSub_20_2.70-130.Objects_Id.fits -id 1 -out Obj1.2DSpc_x.fits -imtype "flux" -sbscale .true. -mask2d "xy" -proj y
+
+7b. as point 7 above but integrating along x direction:
+Cube2Im -cube DATACUBE-STATVAR.CSub_20_2.70-130.fits -idcube DATACUBE-STATVAR.CSub_20_2.70-130.Objects_Id.fits -id 1 -out Obj1.2DSpc_x.fits -imtype "flux" -sbscale .true. -mask2d "xy" -proj x
+
+7c. as point 7 above but applying the mask to the whole cube:
+Cube2Im -cube DATACUBE-STATVAR.CSub_20_2.fits -idcube DATACUBE-STATVAR.CSub_20_2.70-130.Objects_Id.fits -id 1 -out Obj1.2DSpc_y_FULL.fits -imtype "flux" -sbscale .true. -mask2d "xy" -proj y
+
+
+8. producing a 1d spectrum using same aperture as in point 7c with some smoothing: 
+Cube2Spc -cube DATACUBE-STATVAR.CSub_20_2.fits -idcube DATACUBE-STATVAR.CSub_20_2.70-130.Objects_Id.fits -id 1 -smoothr 2
+
+
+9. producing a 1d spectrum of a continuum object (in this case, the associated object 19) using the white-light image as a mask and smoothing:
+Cube2Spc -cube "DATACUBE-STATVAR.fits" -idcube SourceMask.fits -id 19 -smoothr 2
+
+
+
+
+
