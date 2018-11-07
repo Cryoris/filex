@@ -1,0 +1,12 @@
+# SnapshotID Obj1 Obj2 Obj3 Obj4 Obj5
+28  31  78      47      142    99
+27  27  79      45      144    103
+26  31  82      53      144    107;117
+25  32  84      49      162    -;120
+24  31  81      44      160    -;-
+23  28  78      41      122        
+# Note: in Snap 23, 162 from 24 merges with another one to become the larger 122
+22  22  56      39      134;126
+# Note: 122 split up again. 134 corresponds to the old 160, 126 to another part that came anew with 122.
+21  26  51;81   36      133;104
+20  18  47;75   33      123;140;;100;115;104;108;109;114
