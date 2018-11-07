@@ -7,6 +7,7 @@
 ##
 
 snaps_dir="/net/astrogate/export/astrodata/jgacon/filex/snapshots"
+this_dir="$(pwd)"
 
 if [ $# -lt 1 ]; then
   echo "Usage:   sh run_cubex.sh <target_id>"
@@ -22,7 +23,7 @@ target="$1"
 # Step 1: Create local directories
 ##
 
-cubex_par="cbx.par"
+cubex_par="$this_dir/cbx.par"
 local_snap_dir="$snaps_dir/snapshot_$target"
 
 echo "Local snapshot directory: $local_snap_dir"
@@ -45,20 +46,20 @@ mkdir -p $cubex_sub_dir
 cd $cubex_sub_dir
 
 # Input file for cubex (must be called snap.fits)
-ln -s "temperature_restricted_density.fits" "snap.fits"
+ln -s "../temperature_restricted_density.fits" "snap.fits"
 
 ##
 # Step 2: Create constant 1 fits image to use for the signal-to-noise ratio
 # 1.fits is filled with ones
 ##
 
-./CubeArit snap.fits "*" 0. 0.fits
-./CubeArit 0.fits "+" 1. 1.fits
+$this_dir/CubeArit snap.fits "*" 0. 0.fits
+$this_dir/CubeArit 0.fits "+" 1. 1.fits
 rm 0.fits
 
 ##
 # Step 3: Run CubEx and give the child a name
 ##
 
-./CubEx/bin/CubEx $cubex_par
+$this_dir/CubEx/bin/CubEx $cubex_par
 mv snap.Objects_Id.fits "ids_$1.fits"
