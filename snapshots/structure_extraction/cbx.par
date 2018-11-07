@@ -1,0 +1,120 @@
+#------------------------------------------------------------ 
+#       CubExtractor       version: 1.7
+# 
+# by Sebastiano Cantalupo (cantalupo@phys.ethz.ch)
+# 
+# usage:
+# /scratch/jgacon/CubEx-1.7/bin/CubEx  <parameter file> [-option [arg]] 
+# or (if you don't want to provide a parameter file):
+# /scratch/jgacon/CubEx-1.7/bin/CubEx  [-InpFile] <name> [-option [arg]] 
+# 
+# command line options:
+#  -<ParameterName> <ParameterValue> : overrides parameter values found in parameter file
+#   e.g.:/scratch/jgacon/CubEx-1.7/bin/CubEx CubEx.par -Catalogue test.cat -MinNSPax 20 -SN_Threshold 2
+# 
+# Here is the full list of available parameters with some explanation and default values:
+# 
+# NB: you can dump this screen output to a file and use it as a parameter file!
+#     Parameter file rules: lines beginning with #%$! are comments. TAB not allowed. No specific order.
+#                           At least one blank space must be present between the parameter name, '=' and the value!
+#     To restore default values, just comment with, e.g. #
+# 
+ 
+#--- Cube-related parameters:
+InpFile = "snap.fits"             !.. input file name of the datacube (NO DEFAULT, you need to provide one!) [short alias parameter "-cube"]
+Catalogue = "??"           !.. name of the final catalogue with objects (default= same as InpFile with .cat extension)
+zmin = 1                   !.. minimum spectral pixel for datacube selection (units: pixels)
+zmax = 9999                !.. maximum spectral pixel for datacube selection      "
+lmin = 0                   !.. minimum z-coordinate for datacube selection in CUNITS3, e.g. Angstrom, if =/0 overrides zmin (requires WCS in the fits!)
+lmax = 0                   !.. maximum z-coordinate for datacube selection in CUNITS3, e.g. Angstrom, if =/0 overrides zmax (requires WCS in the fits!)
+  
+#--- Variance-related parameters:
+VarFile = "1.fits"         !.. name of the variance file if not contained in InpFile. Needed only if the file name is non standard (i.e., InpFile+".VAR.fits"). [alias "-var"]
+MultiExt = .true.          !.. if .true. interprets InpFile as a multiextension datacube with data on ext 1 and variance on ext 2 
+                           !... unless VarFile is provided or default VarFile name exists in the current directory. [alias "-m"]
+                           !... if .false. and VarFile=??, then a simple variance will be estimated from the cube itself, layer by layer.
+RescaleVar = .false.       !.. if .true., rescale the original variance in datacube using the estimated variance layer by layer
+RescaleVarArea = "all"     !.. area for variance rescaling, four integeer values="xmin xmax ymin ymax", use "all" for all FoV 
+RescaleVarMin = 0.9        !.. minimum rescaling factor for variance rescaling if RescaleVar=.true.
+RescaleVarMax = 10.        !.. maximum rescaling factor for variance rescaling if RescaleVar=.true.
+RescaleVarFR = 150         !.. if >0, it will median-filter the variance rescaling factors using a filter with this radius
+                           !... only values between RescaleVarMin and RescaleVarMax will be considered in the median filtering.
+RescalingVarOutFile = "??" !.. if provided, writes down in this file the rescaling factor of the variance (see RescaleVar option)
+RescalingVarInpFile = "??" !.. if provided, uses the rescaling factor of the variance from this file (see RescaleVar option)
+EstVarOutFile = "??"       !.. if provided, writes down in this file the estimated variance (see MulitExt option)
+ 
+#--- Filtering parameters:
+ApplyFilter = .false.      !.. if true, applies a gaussian filter to the cube for detection (photometry is performed on original cube) [alias "-f"] 
+ApplyFilterVar = .false.   !.. if true, applies the same gaussian filter as above aslo to the variance cube for detection (assuming null covariance) [alias "-fv"]
+FilterXYRad = 0            !.. gaussian spatial filter size (radius) in pixels, 0=no filtering [alias "-fsr"]
+FilterZRad = 0             !.. gaussian wavelenght filter size (radius) in spectral pixels, 0=no filtering [alias "-fzr"]
+  
+#--- Detection parameters:
+SN_Threshold = 8          !.. voxel individual threshold in SNR for detection [alias "-sn"] 
+Halo_Threshold = 50       !.. voxel individual threshold in SNR for detection [alias "-sn"] 
+ISN_Threshold = 0          !.. integrated SNR over the 3d-mask for detection (0=not used) [alias "-isn"]
+SSN_Threshold = 0          !.. integrated spectral SNR (using 1d optimally extracted spectra) for detection (0=not used) [alias "-ssn"]
+SN_Threshold_Conn = 0      !.. voxel individual threshold in SNR for detection if connected to a previously detected voxel (0=not used)
+MinNVox = 100             !.. minimum number of voxels for detection. ALL three conditions above need to be met for detection [alias "-n" and "MinNSpax"] 
+MinArea = 1                !.. minimum number of spatial pixels for detection (projection over z)
+MinDz = 1                  !.. minimum number of spectral pixels for detection (projection over x,y)
+MaxDz = 10000              !.. max number of spectral pixels for detection (projection over x,y). Useful for removing continuum objs
+ReliabCheck = .false.      !.. if .true. checks the reliability of the catalogue performing extraction and photometry on the "negative" Cube
+NegCatalogue = "??"        !.. if set and if ReliabCheck=.true., it produces a file with the objects detected in the "negative" Cube
+  
+#--- Deblending and Merging parameters:
+Deblend = .false.          !.. flag to activate deblending 
+Deblend_MinSNR = 1.        !.. minimum SNR threshold for deblending in units of SN_Threshold 
+Deblend_MaxSNR = 10.       !.. maximum SNR threshold for deblending in units of SN_Threshold 
+Deblend_NSteps = 30        !.. number of deblending thresholds between Deblend_Min_SNR and Deblend_Max_SNR 
+Deblend_MinNPix = 4        !.. minimum number of spatial pixels above deblending threshold to trigger object splitting 
+AssocFrac = -1             !.. fraction of overlapping projected XY area to "associate/merge" individual detections separated
+                           !... in wavelength, default means no association (and no assoc catalogue produced)
+AssocCatalogue = "??"      !.. name of the merged catalogue with associated objects (default= same as InpFile with assoc.cat extension)
+  
+#--- Photometry parameters:
+AperRadius = 3             !.. Cylindrical aperture area. units: pixels
+AperDz = 0                 !.. If defined > 0 : Cylindrical aperture spectral depth around light-weighted centroid. units: spectral pixels.
+                           !.. If defined < 0 : automatic spectral extraction is performed above abs(AperDz) sigma using 1d spectra.
+                           !.. If defined = 0 : simply use the spectral width from the segmentation map.
+InpCat = "??"              !.. if a filename is provided, performs only photometry using the positions of the objects
+                           !... in this CubEx catalogue skipping detection and extraction, a IdCube (see below) is also needed for the IsoFlux measurement
+InpCatOnly = "-1"          !.. if defined and /=-1, it will only perform photometry for the selected objects in InpCat (e.g., InpCatOnly = "35 12 47")
+IdCube = "??"              !.. associated IdCube to the InpCat for the IsoFlux measurement
+  
+#--- CheckCube parameters (NB: these are arrays if NCheckCubes>1):
+NCheckCubes = 1              !.. number of CheckCubes produced by CubEx (1 by default), use 0 for no checkcubes
+                             !.. NB: if /=1, NCheckCubes parameter MUST preced any other CheckCube options in the parameter file!
+CheckCube = "??"             !.. name of CheckCube(s) if requested. Default is "InpFile"+"CheckCubeType"+".fits". NB: all names on the same line!
+CheckCubeFMT = "fits"        !.. format for CheckCube(s): either fits/bov
+CheckCubeType = "Objects_Id" !.. CheckCube(s) variable; options (one per checkcube requested, all on the same line): [alias "-cct"]
+                             !... Objects          = original cube pixels associated with detected objects
+                             !... Objects_F        = filtered cube pixels associated with detected objects
+                             !... Objects_SNR      = SNR cube including only pixels of detected objects
+                             !... Objects_SNR_F    = filtered SNR cube including only pixels of detected objects
+                             !... Objects_Id       = cube with the pixel labeled with the Id of detected objects (3d segmentation map)
+                             !... Objects_Id_Assoc = cube with the pixel labeled with the Id or Assoc Id in case of associated objects
+                             !... SNR              = Signal to Noise cube (simply Cube/sqrt(Var)) 
+                             !... SNR_F            = filtered Signal to Noise cube (simply CubeF/sqrt(VarF)) 
+                             !... Residuals        = original cube pixels that are not in detected objects
+                             !... EXAMPLE: set NCheckCubes = 3 and CheckCubeType = "Objects_Id" "Objects_SNR_F" "SNR_F" 
+Objects_SNR_Floor = 0.99     !.. Floor value **in units of SN_Threshold** for CheckCubes Objects_SNR and Objects_SNR_F, 
+                             !.. i.e., all voxels not associated to objects will have this value in the SNR CheckCubes.
+                             !.. Parameter for visualization purposes if Contours on VisIt are used (because of VisIt interpolation).
+  
+#--- Masking parameters:
+SourceMask = "??"          !.. IMAGE with objects id of sources to mask before detection (e.g., the result of a CubEx run on the white-light image)
+MaskOnly   = "-1"          !.. if defined and /=-1, it will only mask the selected objects in sourcemask (e.g., MaskOnly = "35 12 47")
+UnMask     = "-1"          !.. if defined and /=-1, it will not  mask the selected objects in sourcemask (e.g., UnMask = "23 145")
+XYedge = 0                 !.. mask FOV edges of the cube by this amount (pixels), useful for cubes with noisy edges
+LayerMaskList = "??"       !.. ASCII file with list of layers (one per row) to be masked before extraction, detection and photometry. 
+ObjMaskList = "??"         !.. ASCII file with list of pixels to be masked before extraction, detection and photometry. 
+                           !... entries are "x y radius", one object per row. Mask is cylindrical over all datacube. Units: integer pixels.
+  
+#--- OTHER:
+Verbosity = 2              !.. verbosity level (0=no screen output, 3=maximum verbosity)
+PrintHeader = .true.       !.. print header in the catalogue file
+maxnlabels = 1000000       !.. stack size for the maximum number of labels in the connected components labeling algorithm
+Deblend_Buffer = 100000    !.. stack size for the number of deblended object and deblending labels
+CFITSIOLibFix = .false.    !.. set this to .true. if CFITSIO library crashes while reading a subsection of the datacube
+  
