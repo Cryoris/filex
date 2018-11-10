@@ -76,19 +76,35 @@ def sizes(options):
         sns.kdeplot(pixels[int(default - 2)], ax=ax)
         plt.xlim([0, 1000])
         plt.ylim([0, 0.01])
+        plt.xlabel("Volume $V$ of filaments in #pixels")
+        plt.ylabel("#Filaments with volume $V$ / Total #Filaments")
+
+        nums = np.array([pixels[id].size for id in snap_ids])
+        ax2 = ax.twinx()
+        ax2.set_ylabel("#Filaments", color="r", alpha=0.5)
+        ax2.tick_params(axis="y", labelcolor="r")
+        ax2_x = np.linspace(0, 1000, nums.size)
+        ax2.plot(ax2_x, nums, "r--", alpha=0.5)
+        point, = ax2.plot(ax2_x[default - 2], nums[default - 2], "ro", alpha=0.5)
 
         axcolor = 'lightgoldenrodyellow'
         axfreq = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor=axcolor)
         sid = Slider(axfreq, "ID", 2, 28, valinit=default, valstep=1)
+        ax.set_title("$z$ = %f" % snapid2z(default))
 
         def update(val):
             id = sid.val
 
             print id
-            ax.clear()
+            #ax.clear()
+            ax.set_ydata()
+            ax.set_xdata()
+            ax.set_title("$z$ = %f" % snapid2z(int(id)))
             ax.set_xlim([0,1000])
             ax.set_ylim([0, 0.01])
             sns.kdeplot(pixels[int(id)], ax=ax)
+            point.set_xdata(ax2_x[int(id) - 2])
+            point.set_ydata(nums[int(id) - 2])
             fig.canvas.draw_idle()
         sid.on_changed(update)
 
